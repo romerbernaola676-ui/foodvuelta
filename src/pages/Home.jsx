@@ -52,7 +52,8 @@ export default function Home() {
                 originalPrice: product.precio_original,
                 discountPrice: product.precio_descuento,
                 image: product.imagen_url,
-                cantidad: product.cantidad // Pasamos la cantidad por si la necesitas mostrar en la tarjeta
+                cantidad: product.cantidad, // Pasamos la cantidad por si la necesitas mostrar en la tarjeta
+                vendedor_id: product.vendedor_id // <-- AGREGA ESTA LÍNEA AQUÍ
               }} 
             />
           ))}

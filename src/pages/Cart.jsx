@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
+import qrYape from '../assets/qr-yape.png';
 
 export default function Cart() {
   const [producto, setProducto] = useState(null);
@@ -25,7 +26,7 @@ export default function Cart() {
     setPagado(true);
 
     if (producto && producto.id) {
-      // 2. Reducir el inventario en lugar de eliminar el producto
+      // 2. Reducir el inventario del producto
       const { data: productoActual } = await supabase
         .from('productos')
         .select('cantidad')
@@ -43,20 +44,15 @@ export default function Cart() {
           .eq('id', producto.id);
       }
 
-      // 3. Cobrar la comisión (Descontar del saldo del vendedor en tiempo real)
+      // 3. Cobrar la comisión usando la función segura (RPC)
       if (producto.vendedor_id) {
-        const { data: perfil } = await supabase
-          .from('perfiles_vendedor')
-          .select('saldo_comisiones')
-          .eq('id', producto.vendedor_id)
-          .single();
+        const { error: rpcError } = await supabase.rpc('cobrar_comision', {
+          p_vendedor_id: producto.vendedor_id,
+          p_monto: comision
+        });
 
-        if (perfil) {
-          const nuevoSaldo = perfil.saldo_comisiones - comision;
-          await supabase
-            .from('perfiles_vendedor')
-            .update({ saldo_comisiones: nuevoSaldo })
-            .eq('id', producto.vendedor_id);
+        if (rpcError) {
+          console.error("Error al cobrar la comisión:", rpcError);
         }
       }
     }
@@ -104,8 +100,8 @@ export default function Cart() {
         <div className="bg-fv-crema p-6 rounded-2xl border border-fv-mostaza text-center">
           <h3 className="font-bold text-lg mb-2 text-fv-marron">Pago mediante Yape</h3>
           <p className="text-sm mb-4">Escanea el QR o yapea al número oficial de Foodvuelta.</p>
-          <div className="bg-white w-40 h-40 mx-auto rounded-xl flex items-center justify-center border-2 border-purple-500 mb-4 text-purple-500 font-bold text-center p-4">
-            [Inserta tu imagen QR Yape en src/assets y llámala aquí con etiqueta img]
+          <div className="bg-white w-40 h-40 mx-auto rounded-xl flex items-center justify-center border-2 border-purple-500 mb-4 overflow-hidden">
+            <img src={qrYape} alt="QR Yape Foodvuelta" className="w-full h-full object-contain" />
           </div>
           <p className="font-bold text-purple-700 text-xl mb-4">929 679 785</p>
           
