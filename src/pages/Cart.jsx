@@ -14,7 +14,6 @@ export default function Cart() {
     }
   }, []);
 
-  // Variables calculadas fuera de la condición para poder usarlas en WhatsApp
   const subtotal = producto ? producto.discountPrice : 0; 
   const comision = subtotal * 0.10; 
   const total = subtotal + comision;
@@ -25,21 +24,47 @@ export default function Cart() {
     setCodigoRecojo(codigo);
     setPagado(true);
 
-    // 2. Eliminar el producto de la base de datos para que ya no aparezca en Foodvuelta
     if (producto && producto.id) {
-      const { error } = await supabase
+      // 2. Reducir el inventario en lugar de eliminar el producto
+      const { data: productoActual } = await supabase
         .from('productos')
-        .delete()
-        .eq('id', producto.id);
-      
-      if (error) console.error("Error al borrar el producto:", error);
+        .select('cantidad')
+        .eq('id', producto.id)
+        .single();
+
+      if (productoActual) {
+        const nuevaCantidad = productoActual.cantidad - 1;
+        await supabase
+          .from('productos')
+          .update({ 
+            cantidad: nuevaCantidad,
+            activo: nuevaCantidad > 0 
+          })
+          .eq('id', producto.id);
+      }
+
+      // 3. Cobrar la comisión (Descontar del saldo del vendedor en tiempo real)
+      if (producto.vendedor_id) {
+        const { data: perfil } = await supabase
+          .from('perfiles_vendedor')
+          .select('saldo_comisiones')
+          .eq('id', producto.vendedor_id)
+          .single();
+
+        if (perfil) {
+          const nuevoSaldo = perfil.saldo_comisiones - comision;
+          await supabase
+            .from('perfiles_vendedor')
+            .update({ saldo_comisiones: nuevoSaldo })
+            .eq('id', producto.vendedor_id);
+        }
+      }
     }
 
-    // 3. Redirigir a WhatsApp con el mensaje prearmado
-    const numeroFoodvuelta = "51999999999"; 
+    // 4. Redirigir a WhatsApp
     const mensaje = `¡Hola Foodvuelta! 🍔 Acabo de yapear S/ ${total.toFixed(2)} por: ${producto.title} (${producto.address}).\n\nMi código de recojo es: *${codigo}*.\n\nAquí te adjunto mi captura de pago para validarlo:`;
     
-    const urlWa = `https://wa.me/${929679785}?text=${encodeURIComponent(mensaje)}`;
+    const urlWa = `https://wa.me/51929679785?text=${encodeURIComponent(mensaje)}`;
     window.open(urlWa, '_blank');
   };
 
@@ -82,7 +107,7 @@ export default function Cart() {
           <div className="bg-white w-40 h-40 mx-auto rounded-xl flex items-center justify-center border-2 border-purple-500 mb-4 text-purple-500 font-bold text-center p-4">
             [Inserta tu imagen QR Yape en src/assets y llámala aquí con etiqueta img]
           </div>
-          <p className="font-bold text-purple-700 text-xl mb-4">999 999 999</p>
+          <p className="font-bold text-purple-700 text-xl mb-4">929 679 785</p>
           
           <button 
             onClick={confirmarPago}
