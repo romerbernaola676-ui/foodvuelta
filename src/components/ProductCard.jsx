@@ -1,13 +1,33 @@
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 export default function ProductCard({ product }) {
   const navigate = useNavigate();
 
   const agregarAlCarrito = () => {
-    // Guardamos el producto seleccionado en la memoria del navegador
-    localStorage.setItem('producto_seleccionado', JSON.stringify(product));
-    // Redirigimos al carrito
-    navigate('/carrito');
+    let carrito = JSON.parse(localStorage.getItem('carrito') || '[]');
+    
+    if (carrito.length > 0 && carrito[0].vendedor_id !== product.vendedor_id) {
+      toast.error('Termina tu compra actual antes de pedir en otro local.');
+      return;
+    }
+
+    const existe = carrito.find(p => p.id === product.id);
+    
+    if (existe) {
+      if (existe.cantidadCompra >= product.cantidad) {
+        toast.error('¡Ya no hay más stock de este producto!');
+        return;
+      }
+      existe.cantidadCompra += 1;
+    } else {
+      carrito.push({ ...product, cantidadCompra: 1 });
+    }
+
+    localStorage.setItem('carrito', JSON.stringify(carrito));
+    window.dispatchEvent(new Event('carritoActualizado'));
+    
+    toast.success('¡Agregado al carrito!');
   };
 
   return (
