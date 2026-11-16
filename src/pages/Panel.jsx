@@ -70,11 +70,12 @@ export default function Panel() {
       .reduce((sum, p) => sum + (p.precio_descuento * p.cantidad * 0.10), 0);
     
     const comisionNueva = parseFloat(precioDesc) * parseInt(cantidad) * 0.10;
+    const saldoLibre = saldo - comisionActual;
     
-    if (comisionActual + comisionNueva > saldo) {
+    if (comisionNueva > saldoLibre) {
       toast.error(
-        `Saldo insuficiente. El 10% de tu inventario total sería S/ ${(comisionActual + comisionNueva).toFixed(2)}, pero solo tienes S/ ${saldo.toFixed(2)}. ¡Recarga tu saldo primero!`, 
-        { duration: 6000 }
+        `Saldo insuficiente. Tienes S/ ${saldo.toFixed(2)} en total, pero S/ ${comisionActual.toFixed(2)} ya respaldan tu inventario activo. Necesitas S/ ${comisionNueva.toFixed(2)} libres para este producto.`, 
+        { duration: 7000 }
       );
       return;
     }
